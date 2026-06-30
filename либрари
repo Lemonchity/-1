@@ -1,0 +1,207 @@
+
+local Player = game:GetService("Players").LocalPlayer
+local TweenService = game:GetService("TweenService")
+
+local Library = {}
+local MyLibrary = Instance.new("ScreenGui")
+MyLibrary.Name = "LeMOON_Library"
+MyLibrary.Parent = game:GetService("CoreGui") -- Или PlayerGui
+
+-- Основной фрейм
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 695, 0, 367)
+MainFrame.Position = UDim2.new(0.5, -347, 0.5, -183)
+MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = MyLibrary
+
+local UICorner = Instance.new("UICorner")
+UICorner.Parent = MainFrame
+
+-- Боковая панель (для табов)
+
+local SideBar = Instance.new("Frame")
+SideBar.Size = UDim2.new(0, 150, 1, 0)
+SideBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+SideBar.BorderSizePixel = 0
+SideBar.Parent = MainFrame
+
+local SideCorner = Instance.new("UICorner")
+SideCorner.Parent = SideBar
+
+-- Контейнер для контента (куда будут открываться табы)
+
+local Container = Instance.new("Frame")
+Container.Size = UDim2.new(1, -160, 1, -10)
+Container.Position = UDim2.new(0, 155, 0, 5)
+Container.BackgroundTransparency = 1
+Container.Parent = MainFrame
+
+-- СИСТЕМА УВЕДОМЛЕНИЙ (Максимум 3, старые уходят вверх)
+
+local NotifContainer = Instance.new("Frame")
+NotifContainer.Size = UDim2.new(0, 250, 1, 0)
+NotifContainer.Position = UDim2.new(1, -260, 0, 10)
+NotifContainer.BackgroundTransparency = 1
+NotifContainer.Parent = MyLibrary
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+UIListLayout.Padding = UDim.new(0, 5)
+UIListLayout.Parent = NotifContainer
+
+function Library:Notify(text)
+    local activeNotifs = NotifContainer:GetChildren()
+    local count = 0
+    for _, v in pairs(activeNotifs) do if v:IsA("Frame") then count = count + 1 end end
+
+    if count >= 3 then
+        local oldest = NotifContainer:FindFirstChildWhichIsA("Frame")
+        if oldest then
+            local targetPos = oldest.Position - UDim2.new(0, 0, 0, 50)
+            TweenService:Create(oldest, TweenInfo.new(0.5), {Position = targetPos}):Play()
+            task.delay(0.5, function() oldest:Destroy() end)
+        end
+    end
+
+    local Notif = Instance.new("Frame")
+    Notif.Size = UDim2.new(1, 0, 0, 40)
+    Notif.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Notif.BorderSizePixel = 0
+    Notif.Parent = NotifContainer
+    
+    local NCorn = Instance.new("UICorner")
+    NCorn.CornerRadius = UDim.new(0, 6)
+    NCorn.Parent = Notif
+
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, -10, 1, 0)
+    Label.Position = UDim2.new(0, 5, 0, 0)
+    Label.BackgroundTransparency = 1
+    Label.TextColor3 = Color3.new(1, 1, 1)
+    Label.Text = text
+    Label.Font = Enum.Font.SourceSans
+    Label.TextSize = 16
+    Label.Parent = Notif
+
+    task.delay(3, function()
+        if Notif then
+            TweenService:Create(Notif, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+            task.wait(0.5)
+            Notif:Destroy()
+        end
+    end)
+end
+
+-- СИСТЕМА ТАБОВ
+
+function Library:CreateTab(name)
+    local TabBtn = Instance.new("TextButton")
+    TabBtn.Size = UDim2.new(1, 0, 0, 40)
+    TabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    TabBtn.Text = name
+    TabBtn.TextColor3 = Color3.new(1,1,1)
+    TabBtn.Font = Enum.Font.SourceSansBold
+    TabBtn.TextSize = 18
+    TabBtn.Parent = SideBar
+
+    local TabPage = Instance.new("ScrollingFrame")
+    TabPage.Size = UDim2.new(1, 0, 1, 0)
+    TabPage.BackgroundTransparency = 1
+    TabPage.Visible = false
+    TabPage.ScrollBarThickness = 2
+    TabPage.Parent = Container
+
+    local PageLayout = Instance.new("UIListLayout")
+    PageLayout.Padding = UDim.new(0, 5)
+    PageLayout.Parent = TabPage
+
+    TabBtn.MouseButton1Click:Connect(function()
+        for _, v in pairs(Container:GetChildren()) do v.Visible = false end
+        TabPage.Visible = true
+    end)
+
+    local Tab = {}
+
+    -- TOGGLE
+    function Tab:CreateToggle(text, callback)
+        local ToggleBtn = Instance.new("TextButton")
+        ToggleBtn.Size = UDim2.new(1, -10, 0, 35)
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        ToggleBtn.Text = text .. " [OFF]"
+        ToggleBtn.TextColor3 = Color3.new(1,1,1)
+        ToggleBtn.Parent = TabPage
+        
+        local enabled = false
+        ToggleBtn.MouseButton1Click:Connect(function()
+            enabled = not enabled
+            ToggleBtn.Text = text .. (enabled and " [ON]" or " [OFF]")
+            ToggleBtn.BackgroundColor3 = enabled and Color3.fromRGB(40, 150, 40) or Color3.fromRGB(60, 60, 60)
+            callback(enabled)
+        end)
+    end
+
+    -- SLIDER
+    function Tab:CreateSlider(text, min, max, callback)
+        local SliderFrame = Instance.new("Frame")
+        SliderFrame.Size = UDim2.new(1, -10, 0, 50)
+        SliderFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        SliderFrame.Parent = TabPage
+
+        local Label = Instance.new("TextLabel")
+        Label.Size = UDim2.new(1, 0, 0, 20)
+        Label.Text = text
+        Label.TextColor3 = Color3.new(1,1,1)
+        Label.BackgroundTransparency = 1
+        Label.Parent = SliderFrame
+
+        local Bar = Instance.new("Frame")
+        Bar.Size = UDim2.new(0.8, 0, 0, 5)
+        Bar.Position = UDim2.new(0.1, 0, 0.7, 0)
+        Bar.BackgroundColor3 = Color3.new(0,0,0)
+        Bar.Parent = SliderFrame
+
+        local Fill = Instance.new("Frame")
+        Fill.Size = UDim2.new(0, 0, 1, 0)
+        Fill.BackgroundColor3 = Color3.new(1,1,1)
+        Fill.Parent = Bar
+
+        local dragging = false
+        local function update()
+            local mousePos = game:GetService("UserInputService"):GetMouseLocation().X
+            local barPos = Bar.AbsolutePosition.X
+            local barSize = Bar.AbsoluteSize.X
+            local percent = math.clamp((mousePos - barPos) / barSize, 0, 1)
+            Fill.Size = UDim2.new(percent, 0, 1, 0)
+            local val = math.floor(min + (max - min) * percent)
+            callback(val)
+        end
+
+        Bar.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
+        end)
+        game:GetService("UserInputService").InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+        end)
+        game:GetService("UserInputService").InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then update() end
+        end)
+    end
+
+    -- TEXTBOX + DROPDOWN (Упрощенная логика)
+    function Tab:CreateTextBox(text, callback)
+        local Box = Instance.new("TextBox")
+        Box.Size = UDim2.new(1, -10, 0, 35)
+        Box.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        Box.Text = text .. " (Type here)"
+        Box.TextColor3 = Color3.new(1,1,1)
+        Box.Parent = TabPage
+        Box.FocusLost:Connect(function() callback(Box.Text) end)
+    end
+
+    return Tab
+end
+
+return Library
