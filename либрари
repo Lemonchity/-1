@@ -4,197 +4,213 @@ local Library = {}
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
--- // Внутренние настройки темы
-
 local Theme = {
-    Main = Color3.fromRGB(20, 20, 20),
-    Accent = Color3.fromRGB(0, 170, 255),
-    Text = Color3.fromRGB(255, 255, 255),
-    Secondary = Color3.fromRGB(35, 35, 35),
-    Corner = UDim.new(0, 12)
+    Main = Color3.fromRGB(15, 15, 18),
+    Sidebar = Color3.fromRGB(22, 22, 26),
+    Accent = Color3.fromRGB(0, 190, 255),
+    Text = Color3.fromRGB(240, 240, 240),
+    SecondaryText = Color3.fromRGB(150, 150, 160),
+    Button = Color3.fromRGB(30, 30, 35),
+    ButtonHover = Color3.fromRGB(40, 40, 45),
+    ToggleOn = Color3.fromRGB(0, 200, 100),
+    ToggleOff = Color3.fromRGB(50, 50, 55),
+    Corner = UDim.new(0, 8)
 }
-
--- // Функция снега
-
-local function StartSnow()
-    local sg = Instance.new("ScreenGui", game.CoreGui)
-    sg.Name = "SnowLayer"
-    for i = 1, 25 do
-        local s = Instance.new("Frame", sg)
-        s.Size = UDim2.new(0, math.random(4, 8), 0, math.random(4, 8))
-        s.Position = UDim2.new(math.random(), 0, math.random(1, 1), 0)
-        s.BackgroundColor3 = Color3.new(1, 1, 1)
-        s.BackgroundTransparency = 0.6
-        Instance.new("UICorner", s).CornerRadius = UDim.new(1, 0)
-        task.spawn(function()
-            while task.wait(0.03) do
-                s.Position = s.Position + UDim2.new(0, 0, 0, 2)
-                if s.Position.Y.Scale > 1 then
-                    s.Position = UDim2.new(math.random(), 0, -0.1, 0)
-                end
-            end
-        end)
-    end
-end
-
--- // Основная функция библиотеки
 
 function Library:CreateWindow()
     local WindowObj = {}
     local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-    ScreenGui.Name = "LemonUI"
+    ScreenGui.Name = "LemonUI_V3"
 
-    -- Главное окно
-    local Main = Instance.new("Frame", ScreenGui)
-    Main.Size = UDim2.new(0, 500, 0, 350)
-    Main.Position = UDim2.new(0.5, -250, 0.5, -175)
-    Main.BackgroundColor3 = Theme.Main
-    Main.BorderSizePixel = 0
-    Instance.new("UICorner", Main).CornerRadius = Theme.Corner
+    -- Контейнер для уведомлений (Стек)
+    local NotifContainer = Instance.new("Frame", ScreenGui)
+    NotifContainer.Name = "NotificationStack"
+    NotifContainer.Size = UDim2.new(0, 300, 0, 400)
+    -- Позиция над инвентарем (снизу справа/центра)
+    NotifContainer.Position = UDim2.new(0.5, -150, 1, -350) 
+    NotifContainer.BackgroundTransparency = 1
+    
+    local NotifLayout = Instance.new("UIListLayout", NotifContainer)
+    NotifLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+    NotifLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    NotifLayout.Padding = UDim.new(0, 10)
 
-    -- Левая панель (Sidebar)
-    local Sidebar = Instance.new("Frame", Main)
-    Sidebar.Size = UDim2.new(0, 140, 1, 0)
-    Sidebar.BackgroundColor3 = Theme.Secondary
-    Sidebar.BorderSizePixel = 0
-    Instance.new("UICorner", Sidebar).CornerRadius = Theme.Corner
-
-    -- Имя софта (Квадрат в углу)
-    local TitleBox = Instance.new("Frame", Sidebar)
-    TitleBox.Size = UDim2.new(0, 120, 0, 40)
-    TitleBox.Position = UDim2.new(0.5, -60, 0, 10)
-    TitleBox.BackgroundColor3 = Theme.Accent
-    Instance.new("UICorner", TitleBox).CornerRadius = UDim.new(0, 8)
-
-    local TitleText = Instance.new("TextLabel", TitleBox)
-    TitleText.Size = UDim2.new(1, 0, 1, 0)
-    TitleText.BackgroundTransparency = 1
-    TitleText.Text = "..." -- По умолчанию
-    TitleText.TextColor3 = Color3.new(1,1,1)
-    TitleText.Font = Enum.Font.GothamBold
-    TitleText.TextSize = 14
-
-    -- Контейнер для табов
-    local TabList = Instance.new("ScrollingFrame", Sidebar)
-    TabList.Size = UDim2.new(1, 0, 1, -60)
-    TabList.Position = UDim2.new(0, 0, 0, 60)
-    TabList.BackgroundTransparency = 1
-    TabList.ScrollBarThickness = 0
-    local TabLayout = Instance.new("UIListLayout", TabList)
-    TabLayout.Padding = UDim.new(0, 5)
-
-    -- Контент
-    local Content = Instance.new("Frame", Main)
-    Content.Size = UDim2.new(1, -150, 1, -10)
-    Content.Position = UDim2.new(0, 145, 0, 5)
-    Content.BackgroundTransparency = 1
-
-    -- Система уведомлений
-    local NotifFrame = Instance.new("Frame", ScreenGui)
-    NotifFrame.Size = UDim2.new(0, 250, 1, 0)
-    NotifFrame.Position = UDim2.new(1, -260, 0, 50)
-    NotifFrame.BackgroundTransparency = 1
-
-    local function Notify(text, duration)
-        local N = Instance.new("Frame", NotifFrame)
+    -- Функция уведомления (Стекающая система)
+    local function Notify(msg)
+        local N = Instance.new("Frame", NotifContainer)
         N.Size = UDim2.new(1, 0, 0, 50)
-        N.BackgroundColor3 = Theme.Secondary
+        N.BackgroundColor3 = Theme.Sidebar
+        N.BorderSizePixel = 0
         Instance.new("UICorner", N).CornerRadius = Theme.Corner
-
-        local T = Instance.new("TextLabel", N)
-        T.Size = UDim2.new(1, -10, 1, 0)
-        T.Position = UDim2.new(0, 10, 0, 0)
-        T.Text = text
-        T.TextColor3 = Color3.new(1,1,1)
-        T.BackgroundTransparency = 1
-        T.TextXAlignment = Enum.TextXAlignment.Left
-        T.Font = Enum.Font.Gotham
-
-        local Bar = Instance.new("Frame", N)
-        Bar.Size = UDim2.new(1, 0, 0, 3)
-        Bar.Position = UDim2.new(0, 0, 1, -3)
-        Bar.BackgroundColor3 = Theme.Accent
-        Bar.BorderSizePixel = 0
-
-        local dur = duration or 5
-        TweenService:Create(Bar, TweenInfo.new(dur, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 3)}):Play()
         
-        task.delay(dur, function()
-            TweenService:Create(N, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+        -- Тень/Полоска акцента
+        local Line = Instance.new("Frame", N)
+        Line.Size = UDim2.new(0, 4, 1, 0)
+        Line.BackgroundColor3 = Theme.Accent
+        Instance.new("UICorner", Line).CornerRadius = Theme.Corner
+
+        local Label = Instance.new("TextLabel", N)
+        Label.Size = UDim2.new(1, -20, 1, 0)
+        Label.Position = UDim2.new(0, 15, 0, 0)
+        Label.BackgroundTransparency = 1
+        Label.Text = msg
+        Label.TextColor3 = Theme.Text
+        Label.Font = Enum.Font.GothamMedium
+        Label.TextSize = 14
+        Label.TextXAlignment = Enum.TextXAlignment.Left
+
+        -- Анимация появления
+        N.Position = UDim2.new(1, 50, 0, 0) -- Начинаем за краем
+        N.BackgroundTransparency = 1
+        Label.TextTransparency = 1
+        
+        TweenService:Create(N, TweenInfo.new(0.4, Enum.EasingStyle.Back), {Position = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 0}):Play()
+        TweenService:Create(Label, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
+
+        -- Удаление
+        task.delay(4, function()
+            TweenService:Create(N, TweenInfo.new(0.5), {BackgroundTransparency = 1, Position = UDim2.new(0, 0, -60, 0)}):Play()
+            TweenService:Create(Label, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
             task.wait(0.5)
             N:Destroy()
         end)
     end
 
-    -- Свойства объекта Window
-    -- Чтобы работало window.name = "..."
-    local Window = {}
-    
-    -- Переопределяем метатаблицу, чтобы можно было менять свойства напрямую
-    setmetatable(Window, {
+    -- Основное окно
+    local Main = Instance.new("Frame", ScreenGui)
+    Main.Size = UDim2.new(0, 550, 0, 380)
+    Main.Position = UDim2.new(0.5, -275, 0.5, -190)
+    Main.BackgroundColor3 = Theme.Main
+    Main.BorderSizePixel = 0
+    Instance.new("UICorner", Main).CornerRadius = Theme.Corner
+
+    local Sidebar = Instance.new("Frame", Main)
+    Sidebar.Size = UDim2.new(0, 160, 1, 0)
+    Sidebar.BackgroundColor3 = Theme.Sidebar
+    Sidebar.BorderSizePixel = 0
+    Instance.new("UICorner", Sidebar).CornerRadius = Theme.Corner
+
+    local TabList = Instance.new("ScrollingFrame", Sidebar)
+    TabList.Size = UDim2.new(1, 0, 1, -70)
+    TabList.Position = UDim2.new(0, 0, 0, 60)
+    TabList.BackgroundTransparency = 1
+    TabList.ScrollBarThickness = 0
+    Instance.new("UIListLayout", TabList).Padding = UDim.new(0, 8)
+
+    local Content = Instance.new("Frame", Main)
+    Content.Size = UDim2.new(1, -180, 1, -20)
+    Content.Position = UDim2.new(0, 175, 0, 10)
+    Content.BackgroundTransparency = 1
+
+    setmetatable(WindowObj, {
         __newindex = function(t, k, v)
-            if k == "name" then
-                TitleText.Text = v
-            else
-                rawset(t, k, v)
-            end
+            if k == "name" then 
+                -- (Здесь логика заголовка, если добавлена)
+            else rawset(t, k, v) end
         end
     })
 
-    -- Функционал табов
-    function Window:CreateTab(tabName)
-        local TBtn = Instance.new("TextButton", TabList)
-        TBtn.Size = UDim2.new(1, -10, 0, 30)
-        TBtn.BackgroundColor3 = Theme.Secondary
-        TBtn.Text = tabName
-        TBtn.TextColor3 = Color3.new(1,1,1)
-        Instance.new("UICorner", TBtn).CornerRadius = UDim.new(0, 6)
+    function WindowObj:CreateTab(name)
+        local TabBtn = Instance.new("TextButton", TabList)
+        TabBtn.Size = UDim2.new(0, 140, 0, 35)
+        TabBtn.BackgroundColor3 = Theme.Button
+        TabBtn.Text = name
+        TabBtn.TextColor3 = Theme.SecondaryText
+        TabBtn.Font = Enum.Font.GothamMedium
+        TabBtn.TextSize = 13
+        Instance.new("UICorner", TabBtn).CornerRadius = Theme.Corner
 
         local Page = Instance.new("ScrollingFrame", Content)
         Page.Size = UDim2.new(1, 0, 1, 0)
         Page.BackgroundTransparency = 1
         Page.Visible = false
         Page.ScrollBarThickness = 2
-        Instance.new("UIListLayout", Page).Padding = UDim.new(0, 5)
+        Page.ScrollBarImageColor3 = Theme.Accent
+        Instance.new("UIListLayout", Page).Padding = UDim.new(0, 10)
 
-        TBtn.MouseButton1Click:Connect(function()
+        TabBtn.MouseButton1Click:Connect(function()
             for _, v in pairs(Content:GetChildren()) do v.Visible = false end
             Page.Visible = true
+            for _, b in pairs(TabList:GetChildren()) do
+                if b:IsA("TextButton") then
+                    TweenService:Create(b, TweenInfo.new(0.3), {TextColor3 = Theme.SecondaryText, BackgroundColor3 = Theme.Button}):Play()
+                end
+            end
+            TweenService:Create(TabBtn, TweenInfo.new(0.3), {TextColor3 = Theme.Text, BackgroundColor3 = Theme.Accent}):Play()
         end)
 
         local Elements = {}
 
         function Elements:AddButton(text, callback)
-            local B = Instance.new("TextButton", Page)
-            B.Size = UDim2.new(1, -10, 0, 35)
-            B.BackgroundColor3 = Theme.Secondary
-            B.Text = text
-            B.TextColor3 = Color3.new(1,1,1)
-            Instance.new("UICorner", B).CornerRadius = Theme.Corner
-            B.MouseButton1Click:Connect(callback)
+            local Btn = Instance.new("TextButton", Page)
+            Btn.Size = UDim2.new(1, -10, 0, 40)
+            Btn.BackgroundColor3 = Theme.Button
+            Btn.Text = text
+            Btn.TextColor3 = Theme.Text
+            Btn.Font = Enum.Font.Gotham
+            Btn.TextSize = 14
+            Instance.new("UICorner", Btn).CornerRadius = Theme.Corner
+            
+            Btn.MouseButton1Click:Connect(callback)
         end
 
-        function Elements:Notify(text, dur)
-            Notify(text, dur)
+        function Elements:AddToggle(text, callback)
+            local ToggleFrame = Instance.new("Frame", Page)
+            ToggleFrame.Size = UDim2.new(1, -10, 0, 40)
+            ToggleFrame.BackgroundColor3 = Theme.Button
+            ToggleFrame.BorderSizePixel = 0
+            Instance.new("UICorner", ToggleFrame).CornerRadius = Theme.Corner
+
+            local Label = Instance.new("TextLabel", ToggleFrame)
+            Label.Size = UDim2.new(1, -60, 1, 0)
+            Label.Position = UDim2.new(0, 15, 0, 0)
+            Label.BackgroundTransparency = 1
+            Label.Text = text
+            Label.TextColor3 = Theme.Text
+            Label.Font = Enum.Font.Gotham
+            Label.TextSize = 14
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+
+            -- Сам переключатель (Track)
+            local Track = Instance.new("Frame", ToggleFrame)
+            Track.Size = UDim2.new(0, 40, 0, 20)
+            Track.Position = UDim2.new(1, -50, 0.5, -10)
+            Track.BackgroundColor3 = Theme.ToggleOff
+            Instance.new("UICorner", Track).CornerRadius = UDim.new(1, 0)
+
+            -- Кружок (Thumb)
+            local Thumb = Instance.new("Frame", Track)
+            Thumb.Size = UDim2.new(0, 16, 0, 16)
+            Thumb.Position = UDim2.new(0, 2, 0.5, -8)
+            Thumb.BackgroundColor3 = Color3.new(1, 1, 1)
+            Instance.new("UICorner", Thumb).CornerRadius = UDim.new(1, 0)
+
+            local toggled = false
+            local btn = Instance.new("TextButton", ToggleFrame)
+            btn.Size = UDim2.new(1, 0, 1, 0)
+            btn.BackgroundTransparency = 1
+            btn.Text = ""
+
+            btn.MouseButton1Click:Connect(function()
+                toggled = not toggled
+                local targetColor = toggled and Theme.ToggleOn or Theme.ToggleOff
+                local targetPos = toggled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+                
+                TweenService:Create(Track, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()
+                TweenService:Create(Thumb, TweenInfo.new(0.2), {Position = targetPos}):Play()
+                
+                callback(toggled)
+            end)
+        end
+
+        function Elements:Notify(msg)
+            Notify(msg)
         end
 
         return Elements
     end
 
-    -- Дополнительно: Mobile Button
-    if UserInputService.TouchEnabled then
-        local Mob = Instance.new("TextButton", ScreenGui)
-        Mob.Size = UDim2.new(0, 50, 0, 50)
-        Mob.Position = UDim2.new(0.8, 0, 0.7, 0)
-        Mob.BackgroundColor3 = Color3.new(0,0,0)
-        Mob.BackgroundTransparency = 0.5
-        Mob.Text = "Le"
-        Mob.TextColor3 = Color3.new(1,1,1)
-        Instance.new("UICorner", Mob).CornerRadius = UDim.new(1, 0)
-    end
-
-    StartSnow()
-    return Window
+    return WindowObj
 end
 
 return Library
