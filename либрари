@@ -1,14 +1,25 @@
 
+
+--[[ 
+
+    PREMIUM GUI LIBRARY (READY TO INJECT)
+    Keybind: Left Control
+    Notifications: Bottom Right (Above Inventory)
+
+--]]
+
 local Library = {}
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
 
 function Library:CreateWindow(title)
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "PremiumLib"
-    ScreenGui.Parent = game.CoreGui
+    ScreenGui.Name = "PremiumLib_GUI"
+    ScreenGui.Parent = CoreGui
     ScreenGui.ResetOnSpawn = false
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
     -- Main Window
     local Main = Instance.new("Frame")
@@ -18,7 +29,6 @@ function Library:CreateWindow(title)
     Main.BorderSizePixel = 0
     Main.Parent = ScreenGui
     
-    -- Скругление и обводка
     local MainCorner = Instance.new("UICorner", Main)
     MainCorner.CornerRadius = UDim.new(0, 12)
     
@@ -45,7 +55,7 @@ function Library:CreateWindow(title)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
     end)
 
-    -- Sidebar (Акцентная часть)
+    -- Sidebar
     local Sidebar = Instance.new("Frame")
     Sidebar.Size = UDim2.new(0, 160, 1, 0)
     Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
@@ -76,10 +86,11 @@ function Library:CreateWindow(title)
     Content.BackgroundTransparency = 1
     Content.Parent = Main
 
-    -- Notifications (Над инвентарем - Right Bottom)
+    -- Notifications (Positioned above inventory)
     local NotifContainer = Instance.new("Frame")
     NotifContainer.Size = UDim2.new(0, 300, 0, 300)
-    NotifContainer.Position = UDim2.new(1, -310, 1, -310) -- Смещение от нижнего правого угла
+
+    NotifContainer.Position = UDim2.new(1, -310, 1, -310) 
     NotifContainer.BackgroundTransparency = 1
     NotifContainer.Parent = ScreenGui
     local NotifLayout = Instance.new("UIListLayout", NotifContainer)
@@ -116,7 +127,7 @@ function Library:CreateWindow(title)
         end)
     end
 
-    -- Keybind Toggle (Left Control)
+    -- Toggle Visibility (Left Control)
     UserInputService.InputBegan:Connect(function(input, gpe)
         if not gpe and input.KeyCode == Enum.KeyCode.LeftControl then
             Main.Visible = not Main.Visible
@@ -144,9 +155,10 @@ function Library:CreateWindow(title)
         Instance.new("UIListLayout", Page).Padding = UDim.new(0, 10)
 
         TabBtn.MouseButton1Click:Connect(function()
-            for _, v in pairs(Content:GetChildren()) do v.Visible = false end
+            for _, v in pairs(Content:GetChildren()) do 
+                if v:IsA("ScrollingFrame") then v.Visible = false end 
+            end
             Page.Visible = true
-            -- Reset colors
             for _, b in pairs(TabHolder:GetChildren()) do
                 if b:IsA("TextButton") then 
                     TweenService:Create(b, TweenInfo.new(0.3), {TextColor3 = Color3.fromRGB(200, 200, 200), BackgroundColor3 = Color3.fromRGB(35, 35, 35)}):Play()
@@ -252,7 +264,7 @@ function Library:CreateWindow(title)
                         end
                     end)
                     UserInputService.InputEnded:Connect(function(endInput)
-                        if endInput.UserInputType == Enum.UserInputType.MouseButton1 or endInput.UserInputType = Enum.UserInputType.Touch then
+                        if endInput.UserInputType == Enum.UserInputType.MouseButton1 or endInput.UserInputType == Enum.UserInputType.Touch then
                             connection:Disconnect()
                         end
                     end)
@@ -270,5 +282,3 @@ function Library:CreateWindow(title)
 
     return UI
 end
-
-return Library
